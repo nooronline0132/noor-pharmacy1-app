@@ -18,13 +18,18 @@ st.markdown("""
 
 # --- LOAD DATA ---
 def load_data():
-    p_file = "Products.xlsx - Products.csv"
-    a_file = "AccountCodes.xlsx - AccountCodes.csv"
-    if os.path.exists(p_file) and os.path.exists(a_file):
-        # Reading fresh data
-        p_df = pd.read_csv(p_file)
-        a_df = pd.read_csv(a_file)
-        return p_df, a_df
+    # Updating file names to match your GitHub
+    p_file = "Products.xlsx"
+    a_file = "AccountCodes.xlsx"
+    
+    try:
+        if os.path.exists(p_file) and os.path.exists(a_file):
+            # Reading directly from Excel files
+            p_df = pd.read_excel(p_file)
+            a_df = pd.read_excel(a_file)
+            return p_df, a_df
+    except Exception as e:
+        st.error(f"File parhne mein masla: {e}")
     return None, None
 
 prods, accounts = load_data()
@@ -39,19 +44,15 @@ if prods is not None:
 
     with col1:
         st.subheader("🛒 Billing Entry")
-        # Customer selection using 'Description' column
+        # Using columns from your Excel
         cust_list = accounts['Description'].dropna().unique()
         selected_cust = st.selectbox("Select Customer", cust_list)
         
-        # Phone number fetch
-        cust_phone = str(accounts[accounts['Description'] == selected_cust]['Phone'].values[0])
-        
-        # Product selection
         p_name = st.selectbox("Search Medicine", [""] + list(prods['ProductName'].dropna().unique()))
         
         if p_name:
             item = prods[prods['ProductName'] == p_name].iloc[0]
-            st.info(f"Price: Rs {item['RetailPrice']} | Salt: {item['SaltName']} | Stock: {item['StockInHand']}")
+            st.info(f"Price: Rs {item['RetailPrice']} | Salt: {item['SaltName']}")
             
             qty = st.number_input("Quantity", min_value=1, value=1)
             if st.button("➕ Add to Bill"):
@@ -70,15 +71,9 @@ if prods is not None:
             grand_total = df_cart['Total'].sum()
             st.write(f"### Total: Rs {grand_total}")
             
-            if st.button("✅ Send WhatsApp"):
-                msg = f"Noor Pharmacy Bill\nCustomer: {selected_cust}\nTotal: Rs {grand_total}"
-                encoded_msg = urllib.parse.quote(msg)
-                wa_link = f"https://wa.me/{cust_phone}?text={encoded_msg}"
-                st.markdown(f'<a href="{wa_link}" target="_blank">Click to Send</a>', unsafe_allow_html=True)
-            
             if st.button("❌ Clear Bill"):
                 st.session_state.cart = []
                 st.rerun()
         st.markdown("</div>", unsafe_allow_html=True)
 else:
-    st.error("Data files (CSV) nahi milin. Please check file names on GitHub.")
+    st.error("Excel files nahi milin! Please ensure Products.xlsx and AccountCodes.xlsx are in GitHub.")
