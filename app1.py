@@ -5,18 +5,16 @@ from datetime import datetime
 # --- PAGE CONFIG ---
 st.set_page_config(page_title="Noor Pharmacy POS", layout="wide")
 
-# --- CUSTOM CSS ---
+# --- CUSTOM CSS (Visibility & Print) ---
 st.markdown("""
 <style>
     .stApp { background-color: white; color: black; }
-    .header { background-color: #0053E1; padding: 10px; text-align: center; color: white; border-bottom: 5px solid #F9B000; }
     h1, h2, h3, p, label { color: black !important; }
-    div.stButton > button { background-color: #388E3C !important; color: white !important; font-weight: bold; width: 100%; }
-    /* Print Styling */
+    .header { background-color: #0053E1; padding: 10px; text-align: center; color: white !important; }
+    div.stButton > button { background-color: #388E3C !important; color: white !important; font-weight: bold; }
     @media print {
-        .no-print, .stSidebar, header, footer, div[data-testid="stToolbar"] { display: none !important; }
-        .print-only { display: block !important; width: 100%; position: absolute; top: 0; left: 0; }
-        .stApp { background-color: white !important; }
+        .no-print, header, footer, .stSidebar, div[data-testid="stToolbar"] { display: none !important; }
+        .print-only { display: block !important; width: 100%; }
     }
     .print-only { display: none; }
 </style>
@@ -26,14 +24,12 @@ st.markdown("""
 @st.cache_data
 def load_data():
     try:
-        # Loading your Excel files
         p_df = pd.read_excel("Products.xlsx")
         a_df = pd.read_excel("AccountCodes.xlsx")
         return p_df, a_df
     except:
         return pd.DataFrame(), pd.DataFrame()
 
-# Initialize Session Data
 if 'p_data' not in st.session_state:
     p_df, a_df = load_data()
     st.session_state.p_data = p_df
@@ -42,17 +38,31 @@ if 'p_data' not in st.session_state:
 if 'cart' not in st.session_state:
     st.session_state.cart = []
 
-# --- MENU NAVIGATION ---
+# --- MENU ---
 st.sidebar.title("Noor Pharmacy")
-# Adding Logo to Sidebar
-try: st.sidebar.image("Noor Pharmacy logo.jpg", width=150)
-except: pass
-
 choice = st.sidebar.radio("Go to:", ["🛒 Sale Counter", "⚙️ Manage Stock/Rates"])
-
-# Initialize variable to avoid NameError
-selected_cust = "Cash Sales"
 
 # --- 🛒 SALE COUNTER ---
 if choice == "🛒 Sale Counter":
-    st.markdown("<div class='header no-print'><h1>NOOR PHARMACY - POS</h1></div>", unsafe_
+    st.markdown("<div class='header no-print'><h1>NOOR PHARMACY - POS</h1></div>", unsafe_allow_html=True)
+    
+    col1, col2 = st.columns([1.5, 1])
+    
+    with col1:
+        st.subheader("New Entry")
+        cust_list = st.session_state.a_data['Description'].dropna().unique()
+        selected_cust = st.selectbox("Select Customer", cust_list)
+        
+        p_name = st.selectbox("Search Product", [""] + list(st.session_state.p_data['ProductName'].dropna().unique()))
+        
+        if p_name:
+            item = st.session_state.p_data[st.session_state.p_data['ProductName'] == p_name].iloc[0]
+            st.write(f"**Rate:** Rs {item['RetailPrice']} | **Stock:** {item['StockInHand']}")
+            qty = st.number_input("Quantity", min_value=1, value=1)
+            
+            if st.button("➕ Add to Bill"):
+                total = round(float(item['RetailPrice']) * qty, 2)
+                st.session_state.cart.append({"Item": p_name, "Price": item['RetailPrice'], "Qty": qty, "Total": total})
+                st.rerun()
+
+    with col
